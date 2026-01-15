@@ -96,9 +96,13 @@ export class FFmpegService {
 
         ffmpeg(inputPath)
           .inputOptions(['-stream_loop', '-1'])
-          .videoFilters(`setpts=${(1 / clampedSpeed).toFixed(3)}*PTS`)
+          .videoFilters([
+            `setpts=${(1 / clampedSpeed).toFixed(3)}*PTS`,
+            'scale=1920:1080:force_original_aspect_ratio=increase',
+            'crop=1920:1080',
+          ])
           .audioFilters(`atempo=${clampedSpeed}`)
-          .outputOptions('-t', targetDuration.toString())
+          .outputOptions(['-t', targetDuration.toString(), '-r', '30'])
           .output(outputPath)
           .on('end', () => {
             console.log(`Finished adjusting speed for ${path.basename(inputPath)}`);
@@ -149,7 +153,7 @@ export class FFmpegService {
     return new Promise((resolve, reject) => {
       const subtitleStyle = [
         'FontName=Arial',
-        'FontSize=24',
+        'FontSize=30',
         'PrimaryColour=&H00FFFFFF',
         'OutlineColour=&H00000000',
         'BorderStyle=1',
@@ -161,6 +165,8 @@ export class FFmpegService {
         'MarginL=240',
         'MarginR=240',
       ].join(',');
+
+      const relativeSubtitlePath = path.relative(process.cwd(), subtitlePath).replace(/\\/g, '/');
 
       ffmpeg(videoPath)
         .input(audioPath)
@@ -176,7 +182,7 @@ export class FFmpegService {
           '-crf',
           '23',
           '-vf',
-          `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.5:t=fill,subtitles=${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/ /g, '\\ ')}:force_style='${subtitleStyle}'`,
+          `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.5:t=fill,subtitles=${relativeSubtitlePath}:force_style='${subtitleStyle}'`,
         ])
         .output(outputPath)
         .on('end', () => {
