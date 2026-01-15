@@ -50,6 +50,8 @@ CREATE TABLE video_projects (
 CREATE INDEX idx_language_configs_user_id ON language_configs(user_id);
 CREATE INDEX idx_approved_ideas_user_id ON approved_ideas(user_id);
 CREATE INDEX idx_approved_ideas_language ON approved_ideas(user_id, language_code);
+CREATE INDEX idx_approved_ideas_status ON approved_ideas(user_id, status);
+CREATE INDEX idx_approved_ideas_project ON approved_ideas(project_id);
 CREATE INDEX idx_video_projects_user_id ON video_projects(user_id);
 CREATE INDEX idx_video_projects_status ON video_projects(user_id, status);
 
@@ -124,3 +126,8 @@ CREATE TRIGGER update_video_projects_updated_at
   BEFORE UPDATE ON video_projects 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();
+
+-- Add constraint to ensure valid idea status values
+ALTER TABLE approved_ideas 
+ADD CONSTRAINT check_idea_status 
+CHECK (status IN ('available', 'in_use', 'completed'));

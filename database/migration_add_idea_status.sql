@@ -14,11 +14,18 @@ UPDATE approved_ideas
 SET status = 'available' 
 WHERE status IS NULL;
 
--- Create index for better performance
+-- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_approved_ideas_status ON approved_ideas(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_approved_ideas_project ON approved_ideas(project_id);
 
--- Add constraint to ensure valid status values
-ALTER TABLE approved_ideas 
-ADD CONSTRAINT IF NOT EXISTS check_idea_status 
-CHECK (status IN ('available', 'in_use', 'completed'));
+-- Add constraint to ensure valid status values (with conditional check)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'check_idea_status'
+  ) THEN
+    ALTER TABLE approved_ideas 
+    ADD CONSTRAINT check_idea_status 
+    CHECK (status IN ('available', 'in_use', 'completed'));
+  END IF;
+END $$;
