@@ -10,8 +10,17 @@ export class FFmpegService {
     let currentChunk: CaptionData[] = [];
     let chunkStartTime = captions[0]?.start || 0;
 
+    const MAX_CHARS = 30; // Roughly one line
+    const MAX_TIME_GAP = 1.5;
+
     for (const caption of captions) {
-      if (caption.end - chunkStartTime > 2.0 || currentChunk.length >= 4) {
+      const currentText = currentChunk.map((c) => c.word).join(' ');
+      const newLength = currentText.length + caption.word.length + 1;
+      
+      if (
+        caption.end - chunkStartTime > MAX_TIME_GAP || 
+        newLength > MAX_CHARS
+      ) {
         if (currentChunk.length > 0) {
           chunks.push({
             words: currentChunk.map((c) => c.word),
@@ -86,6 +95,7 @@ export class FFmpegService {
         console.log(`Speed factor: ${speedFactor}, Clamped: ${clampedSpeed}`);
 
         ffmpeg(inputPath)
+          .inputOptions(['-stream_loop', '-1'])
           .videoFilters(`setpts=${(1 / clampedSpeed).toFixed(3)}*PTS`)
           .audioFilters(`atempo=${clampedSpeed}`)
           .outputOptions('-t', targetDuration.toString())
@@ -139,15 +149,17 @@ export class FFmpegService {
     return new Promise((resolve, reject) => {
       const subtitleStyle = [
         'FontName=Arial',
-        'FontSize=48',
+        'FontSize=24',
         'PrimaryColour=&H00FFFFFF',
         'OutlineColour=&H00000000',
-        'BorderStyle=3',
-        'Outline=4',
-        'Shadow=0',
+        'BorderStyle=1',
+        'Outline=2',
+        'Shadow=1',
         'Bold=1',
         'Alignment=2',
         'MarginV=50',
+        'MarginL=240',
+        'MarginR=240',
       ].join(',');
 
       ffmpeg(videoPath)
@@ -164,7 +176,7 @@ export class FFmpegService {
           '-crf',
           '23',
           '-vf',
-          `subtitles=${subtitlePath.replace(/\\/g, '/')}:force_style='${subtitleStyle}'`,
+          `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.5:t=fill,subtitles=${subtitlePath.replace(/\\/g, '/')}:force_style='${subtitleStyle}'`,
         ])
         .output(outputPath)
         .on('end', () => {
