@@ -62,10 +62,10 @@ router.post('/approve', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
-// Get approved ideas
+// Get approved ideas (only available ones for selection)
 router.get('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
-    const { languageCode } = req.query;
+    const { languageCode, includeAll } = req.query;
     const userId = req.user!.id;
 
     let query = supabase
@@ -76,6 +76,11 @@ router.get('/', authMiddleware, async (req: AuthRequest, res) => {
 
     if (languageCode) {
       query = query.eq('language_code', languageCode);
+    }
+
+    // Only show available ideas unless specifically requesting all
+    if (includeAll !== 'true') {
+      query = query.eq('status', 'available');
     }
 
     const { data, error } = await query;

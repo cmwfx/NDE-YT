@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
-import { Check, X, Trash2, ChevronRight } from 'lucide-react';
+import { Check, X, Trash2, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
 import type { VideoProject, LanguageConfig, ApprovedIdea } from 'shared';
 
 interface IdeaStepProps {
@@ -31,7 +31,10 @@ export function IdeaStep({ project, langConfig, onRefresh }: IdeaStepProps) {
   const loadApprovedIdeas = async () => {
     try {
       const response = await api.get('/ideas', {
-        params: { languageCode: project.language_code },
+        params: { 
+          languageCode: project.language_code,
+          includeAll: 'true' // Show all ideas including in_use and completed
+        },
       });
       setApprovedIdeas(response.data);
     } catch (error) {
@@ -232,36 +235,61 @@ export function IdeaStep({ project, langConfig, onRefresh }: IdeaStepProps) {
       <Card>
         <CardHeader>
           <CardTitle>Approved Ideas</CardTitle>
-          <CardDescription>Select an idea to continue</CardDescription>
+          <CardDescription>Select an available idea to continue</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {approvedIdeas.length === 0 ? (
             <p className="text-sm text-muted-foreground">No approved ideas yet</p>
           ) : (
-            approvedIdeas.map((idea) => (
-              <div
-                key={idea.id}
-                className={`flex items-start gap-2 rounded-md border p-3 cursor-pointer transition-colors ${
-                  selectedIdea === idea.idea_text ? 'border-primary bg-primary/10' : 'hover:bg-accent'
-                }`}
-                onClick={() => setSelectedIdea(idea.idea_text)}
-              >
-                <div className="flex h-5 w-5 items-center justify-center">
-                  {selectedIdea === idea.idea_text && <Check className="h-4 w-4 text-primary" />}
-                </div>
-                <p className="flex-1 text-sm">{idea.idea_text}</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(idea.id);
-                  }}
+            approvedIdeas.map((idea) => {
+              const isAvailable = idea.status === 'available';
+              const isInUse = idea.status === 'in_use';
+              const isCompleted = idea.status === 'completed';
+              
+              return (
+                <div
+                  key={idea.id}
+                  className={`flex items-start gap-2 rounded-md border p-3 transition-colors ${
+                    !isAvailable ? 'opacity-60' : 'cursor-pointer'
+                  } ${
+                    selectedIdea === idea.idea_text && isAvailable
+                      ? 'border-primary bg-primary/10'
+                      : isAvailable
+                      ? 'hover:bg-accent'
+                      : ''
+                  }`}
+                  onClick={() => isAvailable && setSelectedIdea(idea.idea_text)}
                 >
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
-            ))
+                  <div className="flex h-5 w-5 items-center justify-center">
+                    {selectedIdea === idea.idea_text && isAvailable && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
+                    {isInUse && <Clock className="h-4 w-4 text-orange-500" />}
+                    {isCompleted && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm">{idea.idea_text}</p>
+                    {!isAvailable && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {isInUse && 'In use by another project'}
+                        {isCompleted && 'Video completed'}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(idea.id);
+                    }}
+                    disabled={isInUse}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              );
+            })
           )}
         </CardContent>
       </Card>

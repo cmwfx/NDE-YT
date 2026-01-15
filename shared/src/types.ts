@@ -20,11 +20,15 @@ export interface LanguageConfig {
   updated_at: string;
 }
 
+export type IdeaStatus = 'available' | 'in_use' | 'completed';
+
 export interface ApprovedIdea {
   id: string;
   user_id: string;
   language_code: string;
   idea_text: string;
+  status: IdeaStatus;
+  project_id: string | null;
   created_at: string;
 }
 

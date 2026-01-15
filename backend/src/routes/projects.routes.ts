@@ -92,6 +92,15 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.user!.id;
     const updateData = req.body;
 
+    // Get current project data
+    const { data: currentProject } = await supabase
+      .from('video_projects')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    // Update the project
     const { data, error } = await supabase
       .from('video_projects')
       .update({
@@ -104,6 +113,31 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res) => {
       .single();
 
     if (error) throw error;
+
+    // If idea_text is being set and we have a linked idea, mark it as in_use
+    if (updateData.idea_text && currentProject && !currentProject.idea_text) {
+      // Find the idea by text and mark it as in_use
+      await supabase
+        .from('approved_ideas')
+        .update({
+          status: 'in_use',
+          project_id: id,
+        })
+        .eq('user_id', userId)
+        .eq('idea_text', updateData.idea_text)
+        .eq('status', 'available');
+    }
+
+    // If status is changing to 'completed', mark the idea as completed
+    if (updateData.status === 'completed' && data.idea_text) {
+      await supabase
+        .from('approved_ideas')
+        .update({
+          status: 'completed',
+        })
+        .eq('project_id', id)
+        .eq('user_id', userId);
+    }
 
     res.json(data);
   } catch (error) {
@@ -118,6 +152,27 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const userId = req.user!.id;
 
+    // Get project to check if it has a linked idea
+    const { data: project } = await supabase
+      .from('video_projects')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    // If project was not completed, release the idea back to available
+    if (project && project.status !== 'completed') {
+      await supabase
+        .from('approved_ideas')
+        .update({
+          status: 'available',
+          project_id: null,
+        })
+        .eq('project_id', id)
+        .eq('user_id', userId);
+    }
+
+    // Delete the project
     const { error } = await supabase
       .from('video_projects')
       .delete()

@@ -23,6 +23,8 @@ CREATE TABLE approved_ideas (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   language_code TEXT NOT NULL,
   idea_text TEXT NOT NULL,
+  status TEXT DEFAULT 'available', -- available, in_use, completed
+  project_id UUID REFERENCES video_projects(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

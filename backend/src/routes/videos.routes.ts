@@ -51,7 +51,7 @@ router.post('/render/:projectId', authMiddleware, async (req: AuthRequest, res) 
       .from('video_projects')
       .update({
         final_video_path: videoPath,
-        current_step: 6,
+        current_step: 7,
         status: 'completed',
         updated_at: new Date().toISOString(),
       })
@@ -60,6 +60,17 @@ router.post('/render/:projectId', authMiddleware, async (req: AuthRequest, res) 
       .single();
 
     if (error) throw error;
+
+    // Mark the idea as completed
+    if (project.idea_text) {
+      await supabase
+        .from('approved_ideas')
+        .update({
+          status: 'completed',
+        })
+        .eq('project_id', projectId)
+        .eq('user_id', userId);
+    }
 
     res.json({
       videoPath,

@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
-import { ChevronRight, ChevronLeft, Upload, File } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Upload, File, CheckCircle } from 'lucide-react';
 import type { VideoProject } from 'shared';
 
 interface AudioStepProps {
@@ -15,6 +16,7 @@ interface AudioStepProps {
 
 export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const { toast } = useToast();
 
@@ -27,6 +29,7 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
     setAudioFile(file);
 
     setUploading(true);
+    setUploadProgress(0);
     try {
       const formData = new FormData();
       formData.append('audio', file);
@@ -35,12 +38,19 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: (progressEvent) => {
+          const progress = progressEvent.total
+            ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            : 0;
+          setUploadProgress(progress);
+        },
       });
 
       onUpdate({ audio_file_path: response.data.filePath });
+      onRefresh();
       toast({
         title: 'Success',
-        description: 'Audio file uploaded',
+        description: 'Audio file uploaded successfully',
       });
     } catch (error) {
       toast({
@@ -51,6 +61,7 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
       setAudioFile(null);
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -112,12 +123,15 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
             {...getRootProps()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragActive ? 'border-primary bg-primary/10' : 'border-muted hover:border-primary/50'
-            }`}
+            } ${uploading ? 'pointer-events-none opacity-50' : ''}`}
           >
             <input {...getInputProps()} />
             <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
             {uploading ? (
-              <p className="mt-4 text-sm text-muted-foreground">Uploading...</p>
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
+                <Progress value={uploadProgress} className="w-full" />
+              </div>
             ) : isDragActive ? (
               <p className="mt-4 text-sm">Drop the audio file here</p>
             ) : (
@@ -130,18 +144,30 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
             )}
           </div>
 
-          {hasAudio && (
+          {project.audio_file_path && !uploading && (
+            <div className="flex items-center gap-2 rounded-md border border-green-500 bg-green-50 dark:bg-green-950 p-4">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                  Audio file uploaded successfully
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  {audioFile?.name || 'Ready for caption generation'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {audioFile && !project.audio_file_path && !uploading && (
             <div className="flex items-center gap-2 rounded-md border p-4">
               <File className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium">
-                  {audioFile?.name || 'Audio file uploaded'}
+                  {audioFile.name}
                 </p>
-                {audioFile && (
-                  <p className="text-xs text-muted-foreground">
-                    {(audioFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {(audioFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
             </div>
           )}
@@ -149,11 +175,11 @@ export function AudioStep({ project, onUpdate, onRefresh }: AudioStepProps) {
       </Card>
 
       <div className="flex justify-between">
-        <Button onClick={handlePrevious} variant="outline">
+        <Button onClick={handlePrevious} variant="outline" disabled={uploading}>
           <ChevronLeft className="mr-2 h-4 w-4" />
           Previous
         </Button>
-        <Button onClick={handleNext} size="lg" disabled={!hasAudio}>
+        <Button onClick={handleNext} size="lg" disabled={!project.audio_file_path || uploading}>
           Next: Generate Captions
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
