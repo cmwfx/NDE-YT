@@ -77,8 +77,8 @@ export function EditingStep({ project, onUpdate, onRefresh }: EditingStepProps) 
   };
 
   const handleDownload = async () => {
-    const { data } = await import('@/lib/supabase');
-    const { data: { session: currentSession } } = await data.supabase.auth.getSession();
+    const { supabase } = await import('@/lib/supabase');
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
     const token = currentSession?.access_token;
     
     if (token) {
