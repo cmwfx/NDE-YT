@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { formatDuration } from '@/lib/utils';
-import type { VideoProject, CaptionData } from 'shared';
+import type { VideoProject } from 'shared';
 
 interface CaptionsStepProps {
   project: VideoProject;

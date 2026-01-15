@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/lib/api';
-import { ChevronLeft, Download, Play } from 'lucide-react';
+import { ChevronLeft, Download } from 'lucide-react';
 import type { VideoProject } from 'shared';
 
 interface EditingStepProps {

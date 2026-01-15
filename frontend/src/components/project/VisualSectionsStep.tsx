@@ -16,7 +16,7 @@ interface VisualSectionsStepProps {
   onRefresh: () => void;
 }
 
-export function VisualSectionsStep({ project, langConfig, onUpdate, onRefresh }: VisualSectionsStepProps) {
+export function VisualSectionsStep({ project, onUpdate, onRefresh }: VisualSectionsStepProps) {
   const [loading, setLoading] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editedQuery, setEditedQuery] = useState('');

@@ -15,7 +15,7 @@ interface IdeaStepProps {
   onRefresh: () => void;
 }
 
-export function IdeaStep({ project, langConfig, onUpdate, onRefresh }: IdeaStepProps) {
+export function IdeaStep({ project, langConfig, onRefresh }: IdeaStepProps) {
   const [generatedIdeas, setGeneratedIdeas] = useState<string[]>([]);
   const [approvedIdeas, setApprovedIdeas] = useState<ApprovedIdea[]>([]);
   const [loading, setLoading] = useState(false);
