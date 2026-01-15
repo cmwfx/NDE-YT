@@ -176,7 +176,7 @@ export class FFmpegService {
           '-crf',
           '23',
           '-vf',
-          `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.5:t=fill,subtitles=${subtitlePath.replace(/\\/g, '/')}:force_style='${subtitleStyle}'`,
+          `drawbox=x=0:y=0:w=iw:h=ih:color=black@0.5:t=fill,subtitles=${subtitlePath.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/ /g, '\\ ')}:force_style='${subtitleStyle}'`,
         ])
         .output(outputPath)
         .on('end', () => {
