@@ -7,6 +7,20 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+// Resolve upload directory to absolute path
+const resolveUploadDir = (uploadPath: string): string => {
+  // If it's already an absolute path, use it
+  if (path.isAbsolute(uploadPath)) {
+    return uploadPath;
+  }
+  // Otherwise, resolve relative to the backend directory (not dist)
+  // Go up from dist to backend, or use current directory if in src
+  const backendRoot = __dirname.includes('/dist')
+    ? path.join(__dirname, '../../')
+    : path.join(__dirname, '../');
+  return path.resolve(backendRoot, uploadPath);
+};
+
 export const config = {
   supabase: {
     url: process.env.SUPABASE_URL || '',
@@ -23,6 +37,6 @@ export const config = {
     apiKey: process.env.PEXELS_API_KEY || '',
   },
   port: parseInt(process.env.PORT || '3001', 10),
-  uploadDir: process.env.UPLOAD_DIR || './uploads',
+  uploadDir: resolveUploadDir(process.env.UPLOAD_DIR || './uploads'),
   nodeEnv: process.env.NODE_ENV || 'development',
 };
