@@ -16,11 +16,15 @@ export const authMiddleware = async (
   try {
     const authHeader = req.headers.authorization;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = '';
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (req.query.token && typeof req.query.token === 'string') {
+      token = req.query.token;
+    } else {
       return res.status(401).json({ error: 'No authorization token provided' });
     }
-
-    const token = authHeader.substring(7);
 
     const { data: { user }, error } = await supabase.auth.getUser(token);
 

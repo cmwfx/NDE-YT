@@ -76,8 +76,20 @@ export function EditingStep({ project, onUpdate, onRefresh }: EditingStepProps) 
     }
   };
 
-  const handleDownload = () => {
-    window.open(`/api/videos/download/${project.id}`, '_blank');
+  const handleDownload = async () => {
+    const { data } = await import('@/lib/supabase');
+    const { data: { session: currentSession } } = await data.supabase.auth.getSession();
+    const token = currentSession?.access_token;
+    
+    if (token) {
+      window.open(`/api/videos/download/${project.id}?token=${token}`, '_blank');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to download',
+      });
+    }
   };
 
   const handlePrevious = async () => {
