@@ -138,7 +138,7 @@ export class FFmpegService {
     console.log(`Adding subtitles and audio to ${videoPath}`);
     return new Promise((resolve, reject) => {
       const subtitleStyle = [
-        'FontName=Arial Black',
+        'FontName=Arial\\ Black',
         'FontSize=48',
         'PrimaryColour=&H00FFFFFF',
         'OutlineColour=&H00000000',
