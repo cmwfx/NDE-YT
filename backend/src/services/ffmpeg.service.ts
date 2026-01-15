@@ -10,7 +10,7 @@ export class FFmpegService {
     let currentChunk: CaptionData[] = [];
     let chunkStartTime = captions[0]?.start || 0;
 
-    const MAX_CHARS = 30; // Roughly one line
+    const MAX_CHARS = 25; // Safer limit for single line
     const MAX_TIME_GAP = 1.5;
 
     for (const caption of captions) {
@@ -27,6 +27,7 @@ export class FFmpegService {
             start: chunkStartTime,
             end: currentChunk[currentChunk.length - 1].end,
             text: currentChunk.map((c) => c.word).join(' '),
+            captions: [...currentChunk],
           });
         }
         currentChunk = [caption];
@@ -43,6 +44,7 @@ export class FFmpegService {
         start: chunkStartTime,
         end: currentChunk[currentChunk.length - 1].end,
         text: currentChunk.map((c) => c.word).join(' '),
+        captions: [...currentChunk],
       });
     }
 
@@ -51,14 +53,30 @@ export class FFmpegService {
 
   createSubtitleFile(chunks: CaptionChunk[], outputPath: string): void {
     let srtContent = '';
+    let counter = 1;
 
-    chunks.forEach((chunk, index) => {
-      const startTime = this.formatSRTTime(chunk.start);
-      const endTime = this.formatSRTTime(chunk.end);
+    chunks.forEach((chunk) => {
+      // Accumulating captions (Option C)
+      // For a chunk "Not in the way", we generate:
+      // 1. "Not" (start of "Not" to start of "in")
+      // 2. "Not in" (start of "in" to start of "the")
+      // 3. "Not in the" (start of "the" to start of "way")
+      // 4. "Not in the way" (start of "way" to end of "way")
 
-      srtContent += `${index + 1}\n`;
-      srtContent += `${startTime} --> ${endTime}\n`;
-      srtContent += `${chunk.text}\n\n`;
+      let accumulatedText = '';
+      
+      chunk.captions.forEach((caption, index) => {
+        accumulatedText += (index > 0 ? ' ' : '') + caption.word;
+        
+        const startTime = this.formatSRTTime(caption.start);
+        // End time is the start of the next word, or the end of the current word if it's the last one
+        const nextCaption = chunk.captions[index + 1];
+        const endTime = this.formatSRTTime(nextCaption ? nextCaption.start : caption.end);
+
+        srtContent += `${counter++}\n`;
+        srtContent += `${startTime} --> ${endTime}\n`;
+        srtContent += `${accumulatedText}\n\n`;
+      });
     });
 
     fs.writeFileSync(outputPath, srtContent, 'utf-8');

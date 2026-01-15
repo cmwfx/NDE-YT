@@ -103,6 +103,7 @@ export interface CaptionChunk {
   start: number;
   end: number;
   text: string;
+  captions: CaptionData[];
 }
 
 // Request/Response types
