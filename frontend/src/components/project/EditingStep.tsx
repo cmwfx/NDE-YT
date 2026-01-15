@@ -24,38 +24,55 @@ export function EditingStep({ project, onUpdate, onRefresh }: EditingStepProps) 
     setRendering(true);
     setProgress(0);
 
-    // Simulate progress (in real app, use WebSocket or SSE for real-time progress)
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(progressInterval);
-          return 95;
-        }
-        return prev + 5;
-      });
-    }, 2000);
-
     try {
-      const response = await api.post(`/videos/render/${project.id}`);
-      clearInterval(progressInterval);
-      setProgress(100);
-      onUpdate({
-        final_video_path: response.data.videoPath,
-        status: 'completed',
-      });
-      toast({
-        title: 'Success',
-        description: 'Video rendered successfully!',
-      });
+      // Start rendering
+      await api.post(`/videos/render/${project.id}`);
+      
+      // Poll for status
+      const pollInterval = setInterval(async () => {
+        try {
+          const { data: updatedProject } = await api.get(`/projects/${project.id}`);
+          
+          if (updatedProject.status === 'completed') {
+            clearInterval(pollInterval);
+            setProgress(100);
+            setRendering(false);
+            onUpdate({
+              final_video_path: updatedProject.final_video_path,
+              status: 'completed',
+            });
+            toast({
+              title: 'Success',
+              description: 'Video rendered successfully!',
+            });
+          } else if (updatedProject.status === 'failed') {
+            clearInterval(pollInterval);
+            setRendering(false);
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Failed to render video',
+            });
+          } else {
+            // Still rendering, update progress fake
+             setProgress((prev) => {
+              if (prev >= 95) return 95;
+              return prev + 1;
+            });
+          }
+        } catch (error) {
+          console.error('Polling error:', error);
+          // Don't stop polling on transient errors
+        }
+      }, 3000);
+
     } catch (error) {
-      clearInterval(progressInterval);
+      setRendering(false);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to render video',
+        description: 'Failed to start rendering',
       });
-    } finally {
-      setRendering(false);
     }
   };
 
